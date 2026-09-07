@@ -27,9 +27,19 @@ Press the key to open the child in a bordered overlay that fills the terminal.
 You see its transcript as it streams and can type to it: your text becomes a
 steering message while it is working and a new prompt while it is idle. The
 child sees your messages prefixed `Human:`. `esc` closes the overlay and
-leaves the child running. `ctrl+x` aborts the child's current turn. `pgup` and
-`pgdn` scroll the transcript; the line under it shows the child's model,
-context share, and cost so far.
+leaves the child running. `ctrl+x` aborts the child's current turn. The mouse
+wheel scrolls the transcript, and so do `pgup` and `pgdn`. In pi's regular
+TUI mode the overlay turns on terminal mouse tracking while it is open, so the
+terminal's own scrollback is off until it closes; in fullscreen mode pi owns
+the mouse already and the overlay takes wheel events from it. The line under
+the transcript shows
+the child's model, context share, and cost so far.
+
+A message you send while the child is mid-turn is queued, and pi delivers it
+after the current tool call finishes. The overlay lists queued messages above
+the editor until the child takes them; `ctrl+x` interrupts a long tool call.
+
+A child has no `delegate` or `reply` of its own. It does the work itself.
 
 `/sub` lists every child of this session, running ones first by key, then
 finished ones by how long ago they last wrote to their session file. That
@@ -77,6 +87,12 @@ The value uses the same grammar as pi's `--model` flag: a name or
 `provider/id`, with an optional `:thinking` suffix. The `delegate` tool takes an
 optional `model` argument in the same grammar that overrides the file for one
 child. With neither, the child inherits the parent's model and thinking level.
+
+A short name such as `opus-5` is matched first against the models you are
+authenticated for; pi's catalogue lists the same model under many providers,
+and only if none of yours match does the full catalogue apply. A child that
+cannot make its first model call, for that reason or any other, reports the
+error to the orchestrator as a failure message.
 
 ## Reloading pi
 

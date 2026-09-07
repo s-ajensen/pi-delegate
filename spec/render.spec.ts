@@ -23,6 +23,13 @@ describe("renderChildMessage", () => {
 		expect(stripAnsi([text])).toContain("Navy blue.");
 	});
 
+	test("labels a failure in the error colour with the reason below", () => {
+		const text = renderChildMessage(buildChildMessage(running, "failure", "No API key."), options, plain).render(WIDE).join("\n");
+
+		expect(text).toContain('<error>subagent "asker" (alt+1, gpt-6-astra) failed</error>');
+		expect(text).toContain("No API key.");
+	});
+
 	test("labels a stop with the child's hotkey, in the accent colour and no box", () => {
 		const text = renderChildMessage(buildChildMessage(running, "stop", "Which shade?"), options, plain).render(WIDE).join("\n");
 

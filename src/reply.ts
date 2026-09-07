@@ -5,8 +5,7 @@ import { hotkey } from "./key.ts";
 import type { Entry, Registry } from "./registry.ts";
 import { renderNothing, renderReplyCall } from "./render.ts";
 import type { Child } from "./spawn.ts";
-
-export const REPLY_TOOL = "reply";
+import { REPLY_TOOL } from "./tools.ts";
 
 export interface ReplyDeps {
 	registry: Registry<Child>;

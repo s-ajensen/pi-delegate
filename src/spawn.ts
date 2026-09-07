@@ -10,6 +10,7 @@ import {
 } from "@earendil-works/pi-coding-agent";
 import { defineReportTool } from "./report.ts";
 import { buildChildName, buildSeed } from "./seed.ts";
+import { DELEGATE_TOOL, REPLY_TOOL } from "./tools.ts";
 
 export interface ChildEnvironment {
 	cwd: string;
@@ -67,7 +68,9 @@ async function openChild(
 		settingsManager: environment.settingsManager,
 		sessionManager,
 		customTools: [defineReportTool((synopsis) => report(synopsis))],
+		excludeTools: [DELEGATE_TOOL, REPLY_TOOL],
 	});
+	await session.bindExtensions({ mode: "print", abortHandler: () => void session.abort() });
 	const send = (text: string) => (session.isStreaming ? session.steer(text) : session.prompt(text));
 	return {
 		session,

@@ -14,11 +14,12 @@ import { buildChildMessage, CHILD_MESSAGE_TYPE, type ChildMessage, type ChildMes
 import { buildEnvironment, loadShared, type Shared } from "./environment.ts";
 import { HOTKEYS } from "./key.ts";
 import { chooseModel } from "./model.ts";
-import { ChildOverlay, OVERLAY_OPTIONS } from "./overlay.ts";
+import { ChildOverlay, MOUSE_OFF, OVERLAY_OPTIONS } from "./overlay.ts";
 import { pickOne } from "./pick.ts";
 import { createRegistry, type Entry } from "./registry.ts";
 import { renderChildMessage } from "./render.ts";
 import { defineReplyTool } from "./reply.ts";
+import { SKILLS_DIR } from "./skills.ts";
 import { createChild, resumeChild, type Child, type ChildEnvironment } from "./spawn.ts";
 import { renderWidgetLines, snapshotChild } from "./widget.ts";
 
@@ -82,7 +83,7 @@ export default function (pi: ExtensionAPI) {
 		const shared = await sharedFor(ctx);
 		const parent = { model: ctx.model, thinkingLevel: ctx.thinkingLevel };
 		return buildEnvironment(shared, {
-			...chooseModel(modelPattern ?? shared.defaults.model, parent, shared.modelRuntime),
+			...(await chooseModel(modelPattern ?? shared.defaults.model, parent, shared.modelRuntime)),
 			parentSessionFile: ctx.sessionManager.getSessionFile(),
 		});
 	};
@@ -110,15 +111,22 @@ export default function (pi: ExtensionAPI) {
 		renderChildMessage(message as ChildMessage, options, theme),
 	);
 
+	let terminal: { write(data: string): void } | undefined;
+	const releaseMouse = () => terminal?.write(MOUSE_OFF);
+
 	const scopeInto = async (ctx: ExtensionContext, entry: Entry<Child> | undefined) => {
 		if (!entry) return ctx.ui.notify("No subagent there.", "info");
 		watch(entry);
 		try {
 			await ctx.ui.custom(
-				(tui, theme, _keybindings, done) => new ChildOverlay(entry.name, entry.child, tui, () => done(undefined), theme),
+				(tui, theme, _keybindings, done) => {
+					terminal = tui.mode === "fullscreen" ? undefined : tui.terminal;
+					return new ChildOverlay(entry.name, entry.child, tui, () => done(undefined), theme);
+				},
 				{ overlay: true, overlayOptions: OVERLAY_OPTIONS },
 			);
 		} finally {
+			releaseMouse();
 			unwatch(entry, (held) => deliver(entry, "stop", held));
 		}
 	};
@@ -153,12 +161,15 @@ export default function (pi: ExtensionAPI) {
 		},
 	});
 
+	pi.on("resources_discover", () => ({ skillPaths: [SKILLS_DIR] }));
+
 	pi.on("session_start", (_event, ctx) => {
 		ui = ctx.hasUI ? ctx.ui : undefined;
 		refreshWidget();
 	});
 
 	pi.on("session_shutdown", () => {
+		releaseMouse();
 		for (const entry of registry.all()) entry.child.session.dispose();
 	});
 }

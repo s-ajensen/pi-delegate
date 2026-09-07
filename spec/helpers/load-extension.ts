@@ -7,5 +7,9 @@ export async function loadDelegate() {
 	if (result.errors?.length) throw new Error(`extension failed to load: ${JSON.stringify(result.errors)}`);
 	const extension = result.extensions.find((candidate) => candidate.tools.has("delegate"));
 	if (!extension) throw new Error("pi-delegate not found among loaded extensions");
-	return extension;
+	const sent: unknown[] = [];
+	result.runtime.sendMessage = ((message: unknown) => {
+		sent.push(message);
+	}) as never;
+	return { extension, sent };
 }

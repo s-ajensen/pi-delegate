@@ -14,6 +14,13 @@ describe("buildChildMessage", () => {
 		expect(message.details).toEqual({ ...running, kind: "stop", text: "Which file?" });
 	});
 
+	test("labels a failure with its reason, so the parent can retry", () => {
+		const message = buildChildMessage(finished, "failure", "No API key found for amazon-bedrock.");
+
+		expect(message.content).toBe('Subagent "finder" (gpt-6-astra) failed:\n\nNo API key found for amazon-bedrock.');
+		expect(message.details.kind).toBe("failure");
+	});
+
 	test("labels a report without a hotkey, because the child has given its key up", () => {
 		const message = buildChildMessage(finished, "report", "Found it.");
 

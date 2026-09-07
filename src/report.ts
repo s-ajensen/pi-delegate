@@ -1,7 +1,6 @@
 import { defineTool, type ToolDefinition } from "@earendil-works/pi-coding-agent";
 import { Type } from "typebox";
-
-export const REPORT_TOOL = "report";
+import { REPORT_TOOL } from "./tools.ts";
 
 export function defineReportTool(onReport: (synopsis: string) => void): ToolDefinition {
 	return defineTool({

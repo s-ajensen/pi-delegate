@@ -2,7 +2,7 @@ import { hotkey } from "./key.ts";
 
 export const CHILD_MESSAGE_TYPE = "delegate_message";
 
-export type ChildMessageKind = "report" | "stop";
+export type ChildMessageKind = "report" | "stop" | "failure";
 
 export interface ChildSource {
 	key: number | undefined;
@@ -18,7 +18,7 @@ export interface ChildMessage {
 	details: ChildSource & { kind: ChildMessageKind; text: string };
 }
 
-const VERBS: Record<ChildMessageKind, string> = { report: "reports", stop: "says" };
+const VERBS: Record<ChildMessageKind, string> = { report: "reports", stop: "says", failure: "failed" };
 
 export function describeSource(source: Pick<ChildSource, "key" | "name" | "model">): string {
 	const parts = [source.key === undefined ? undefined : hotkey(source.key), source.model].filter((p) => p !== undefined);

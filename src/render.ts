@@ -4,7 +4,7 @@ import { describeSource, type ChildMessage } from "./deliver.ts";
 import { hotkey } from "./key.ts";
 
 export interface Paint {
-	fg(color: "accent" | "toolTitle" | "customMessageLabel" | "customMessageText", text: string): string;
+	fg(color: "accent" | "error" | "toolTitle" | "customMessageLabel" | "customMessageText", text: string): string;
 	bg(color: "customMessageBg", text: string): string;
 	bold(text: string): string;
 }
@@ -28,6 +28,7 @@ export function renderChildMessage(message: ChildMessage, _options: MessageRende
 	const { kind, text } = message.details;
 	const who = describeSource(message.details);
 	if (kind === "report") return boxed(`report from ${who}`, text, paint);
+	if (kind === "failure") return titled(paint.fg("error", `${who} failed`), text, paint);
 	return titled(paint.fg("accent", `${who} says`), text, paint);
 }
 

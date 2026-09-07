@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { fauxAssistantMessage, fauxToolCall } from "@earendil-works/pi-ai";
+import { existsSync } from "node:fs";
+import { join } from "node:path";
 import { DefaultResourceLoader, SessionManager } from "@earendil-works/pi-coding-agent";
 import { HOTKEYS } from "../src/key.ts";
 import { createChild } from "../src/spawn.ts";
@@ -9,7 +11,7 @@ import { loadDelegate, PACKAGE_DIR } from "./helpers/load-extension.ts";
 
 describe("pi-delegate extension", () => {
 	test("registers the delegate and reply tools, the /sub command, and one shortcut per hotkey", async () => {
-		const extension = await loadDelegate();
+		const { extension } = await loadDelegate();
 
 		expect([...extension.tools.keys()]).toEqual(["delegate", "reply"]);
 		expect([...extension.commands.keys()]).toEqual(["sub"]);
@@ -17,13 +19,26 @@ describe("pi-delegate extension", () => {
 	});
 
 	test("does not give the parent the report tool", async () => {
-		const extension = await loadDelegate();
+		const { extension } = await loadDelegate();
 
 		expect(extension.tools.has("report")).toBe(false);
 	});
 
+	test("contributes the delegate skill through resources_discover, so a dropped-in copy has it too", async () => {
+		const { extension } = await loadDelegate();
+		const discover = extension.handlers.get("resources_discover")?.[0];
+		if (!discover) throw new Error("no resources_discover handler");
+
+		const result = (await discover({ type: "resources_discover", cwd: PACKAGE_DIR, reason: "startup" }, {} as never)) as {
+			skillPaths?: string[];
+		};
+
+		expect(result.skillPaths).toHaveLength(1);
+		expect(existsSync(join(result.skillPaths![0]!, "delegate", "SKILL.md"))).toBe(true);
+	});
+
 	test("renders the child's messages itself", async () => {
-		const extension = await loadDelegate();
+		const { extension } = await loadDelegate();
 
 		expect(extension.messageRenderers.has("delegate_message")).toBe(true);
 	});
@@ -45,7 +60,7 @@ describe("pi-delegate across a second load of the extension", () => {
 	});
 
 	test("/sub still lists a child started before another loader loaded pi-delegate", async () => {
-		const extension = await loadDelegate();
+		const { extension } = await loadDelegate();
 		const delegate = extension.tools.get("delegate")!.definition;
 		const ctx = {
 			cwd: world.environment.cwd,
@@ -81,7 +96,7 @@ describe("pi-delegate across a second load of the extension", () => {
 	});
 
 	test("/sub offers a child that exists only on disk and resumes it when chosen", async () => {
-		const extension = await loadDelegate();
+		const { extension } = await loadDelegate();
 		const orphan = await createChild(
 			{
 				...world.environment,

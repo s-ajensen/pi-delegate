@@ -108,13 +108,15 @@ describe("delegate tool", () => {
 		expect(registry.all()[0]?.pending).toBe("Which file?");
 	});
 
-	test("marks a child failed when its run errors", async () => {
-		const { registry, settled, run } = makeTool();
+	test("marks a child failed when its run errors, and tells the parent why", async () => {
+		const { registry, delivered, settled, run } = makeTool();
 		const done = settled();
 
 		await run("finder", "Find the thing.");
 		await done;
 
 		expect(registry.all()[0]?.state).toBe("failed");
+		expect(delivered.map((d) => d.kind)).toEqual(["failure"]);
+		expect(delivered[0]?.text).toContain("faux");
 	});
 });

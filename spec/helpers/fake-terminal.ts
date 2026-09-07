@@ -1,4 +1,4 @@
-import { TuiMainScreen, type Terminal, type TUI } from "@earendil-works/pi-tui";
+import { TuiAltScreen, TuiMainScreen, type Terminal, type TUI } from "@earendil-works/pi-tui";
 import { initTheme } from "@earendil-works/pi-coding-agent";
 
 export class FakeTerminal implements Terminal {
@@ -26,9 +26,18 @@ export class FakeTerminal implements Terminal {
 	setProgress(): void {}
 }
 
-export function makeTui(columns = 80, rows = 24): TUI {
+export function makeTuiOver(terminal: FakeTerminal): TUI {
 	initTheme("dark");
-	return new TuiMainScreen(new FakeTerminal(columns, rows));
+	return new TuiMainScreen(terminal);
+}
+
+export function makeTui(columns = 80, rows = 24): TUI {
+	return makeTuiOver(new FakeTerminal(columns, rows));
+}
+
+export function makeFullscreenTuiOver(terminal: FakeTerminal): TUI {
+	initTheme("dark");
+	return new TuiAltScreen(terminal);
 }
 
 const ANSI = /\u001b\[[0-9;?]*[A-Za-z]/g;

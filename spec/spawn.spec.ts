@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { fauxAssistantMessage, fauxText, fauxToolCall } from "@earendil-works/pi-ai";
 import { join } from "node:path";
 import { SessionManager } from "@earendil-works/pi-coding-agent";
+import { Type } from "typebox";
 import { createChild, resumeChild, type ChildHandlers } from "../src/spawn.ts";
 import { makeChildWorld, type ChildWorld } from "./helpers/child-world.ts";
 
@@ -102,6 +103,71 @@ describe("createChild", () => {
 
 		expect(log.failures).toHaveLength(1);
 		expect(log.stops).toEqual([]);
+	});
+
+	test("a child never gets delegate or reply, even when its extensions offer them", async () => {
+		const offering = await makeChildWorld({
+			extensions: [
+				{
+					name: "offers-delegation",
+					factory: (pi) => {
+						for (const name of ["delegate", "reply", "harmless"]) {
+							pi.registerTool({
+								name,
+								label: name,
+								description: name,
+								parameters: Type.Object({}),
+								execute: async () => ({ content: [], details: undefined }),
+							});
+						}
+					},
+				},
+			],
+		});
+		try {
+			const child = await createChild(offering.environment, finder);
+			const names = child.session.agent.state.tools.map((tool) => tool.name);
+
+			expect(names).toContain("harmless");
+			expect(names).toContain("report");
+			expect(names).not.toContain("delegate");
+			expect(names).not.toContain("reply");
+		} finally {
+			offering.dispose();
+		}
+	});
+
+	test("a child's extensions receive session_start and can scope tools there, as they do in pi's own modes", async () => {
+		const starts: string[] = [];
+		const scoping = await makeChildWorld({
+			extensions: [
+				{
+					name: "scopes-on-start",
+					factory: (pi) => {
+						pi.registerTool({
+							name: "only_elsewhere",
+							label: "only elsewhere",
+							description: "scoped away on session start",
+							parameters: Type.Object({}),
+							execute: async () => ({ content: [], details: undefined }),
+						});
+						pi.on("session_start", (event) => {
+							starts.push(event.reason);
+							pi.setActiveTools(pi.getActiveTools().filter((name) => name !== "only_elsewhere"));
+						});
+					},
+				},
+			],
+		});
+		try {
+			const child = await createChild(scoping.environment, finder);
+			const names = child.session.agent.state.tools.map((tool) => tool.name);
+
+			expect(starts).toEqual(["startup"]);
+			expect(names).not.toContain("only_elsewhere");
+		} finally {
+			scoping.dispose();
+		}
 	});
 
 	test("a child resumed from its file keeps its history and can report again", async () => {

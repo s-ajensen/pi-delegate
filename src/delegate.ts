@@ -4,8 +4,7 @@ import { adoptChild, type AdoptDeps } from "./adopt.ts";
 import { hotkey } from "./key.ts";
 import { renderDelegateCall, renderNothing } from "./render.ts";
 import type { Brief, Child } from "./spawn.ts";
-
-export const DELEGATE_TOOL = "delegate";
+import { DELEGATE_TOOL } from "./tools.ts";
 
 export interface DelegateDeps extends AdoptDeps {
 	create(brief: Brief, ctx: ExtensionContext): Promise<Child>;

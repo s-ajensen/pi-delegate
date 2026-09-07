@@ -23,7 +23,8 @@ export function adoptChild(deps: AdoptDeps, name: string, child: Child, state: C
 			deps.registry.mark(entry, "reported");
 			deps.deliver(entry, "report", synopsis);
 		},
-		fail() {
+		fail(message) {
+			deps.deliver(entry, "failure", message);
 			deps.registry.mark(entry, "failed");
 		},
 	});

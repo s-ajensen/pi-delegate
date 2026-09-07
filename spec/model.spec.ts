@@ -36,25 +36,49 @@ describe("chooseModel", () => {
 	});
 	afterEach(() => world.dispose());
 
-	test("errors on a pattern that matches no model", () => {
-		expect(() => chooseModel("nope/none", parent, world.environment.modelRuntime)).toThrow(/not found/);
+	test("errors on a pattern that matches no model", async () => {
+		expect(chooseModel("nope/none", parent, world.environment.modelRuntime)).rejects.toThrow(/not found/);
 	});
 
-	test("falls back to the parent's model and thinking level when no pattern is set", () => {
-		expect(chooseModel(undefined, parent, world.environment.modelRuntime)).toEqual(parent);
+	test("falls back to the parent's model and thinking level when no pattern is set", async () => {
+		expect(await chooseModel(undefined, parent, world.environment.modelRuntime)).toEqual(parent);
 	});
 
-	test("resolves a pattern and leaves thinking to pi's defaults when the pattern omits it", () => {
-		const choice = chooseModel("faux-1", parent, world.environment.modelRuntime);
+	test("resolves a pattern and leaves thinking to pi's defaults when the pattern omits it", async () => {
+		const choice = await chooseModel("faux-1", parent, world.environment.modelRuntime);
 
 		expect(choice.model.id).toBe("faux-1");
 		expect(choice.thinkingLevel).toBeUndefined();
 	});
 
-	test("takes the thinking level from the pattern", () => {
-		const choice = chooseModel("faux/faux-1:high", parent, world.environment.modelRuntime);
+	test("takes the thinking level from the pattern", async () => {
+		const choice = await chooseModel("faux/faux-1:high", parent, world.environment.modelRuntime);
 
 		expect(choice.model.id).toBe("faux-1");
+		expect(choice.thinkingLevel).toBe("high");
+	});
+});
+
+describe("chooseModel with an authenticated provider", () => {
+	let world: ChildWorld;
+	const parent = { model: { provider: "parent", id: "parent-model" } as Model<string>, thinkingLevel: undefined };
+	beforeEach(async () => {
+		world = await makeChildWorld({ faux: { models: [{ id: "claude-opus-5", reasoning: true }] } });
+		await world.environment.modelRuntime.setRuntimeApiKey("faux", "test-key");
+	});
+	afterEach(() => world.dispose());
+
+	test("a short name that pi's catalogue also matches picks the provider you can actually use", async () => {
+		const choice = await chooseModel("opus-5", parent, world.environment.modelRuntime);
+
+		expect(choice.model.provider).toBe("faux");
+		expect(choice.model.id).toBe("claude-opus-5");
+	});
+
+	test("keeps the thinking suffix on that path", async () => {
+		const choice = await chooseModel("opus-5:high", parent, world.environment.modelRuntime);
+
+		expect(choice.model.provider).toBe("faux");
 		expect(choice.thinkingLevel).toBe("high");
 	});
 });
