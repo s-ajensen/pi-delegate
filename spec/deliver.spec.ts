@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { buildChildMessage, CHILD_MESSAGE_TYPE, prefixHuman, prefixOrchestrator } from "../src/deliver.ts";
+import { buildChildMessage, CHILD_MESSAGE_TYPE, prefixHuman, prefixOrchestrator, REVIEW_REMINDER } from "../src/deliver.ts";
 
 const running = { key: 3, name: "finder", model: "gpt-6-astra", sessionFile: "/s/child.jsonl" };
 const finished = { ...running, key: undefined };
@@ -24,8 +24,19 @@ describe("buildChildMessage", () => {
 	test("labels a report without a hotkey, because the child has given its key up", () => {
 		const message = buildChildMessage(finished, "report", "Found it.");
 
-		expect(message.content).toBe('Subagent "finder" (gpt-6-astra) reports:\n\nFound it.');
+		expect(message.content).toBe(`Subagent "finder" (gpt-6-astra) reports:\n\nFound it.\n\n${REVIEW_REMINDER}`);
 		expect(message.details.kind).toBe("report");
+		expect(message.details.text).toBe("Found it.");
+	});
+
+	test("attaches the review reminder only to reports, since a stop or a failure has no tree to audit", () => {
+		expect(buildChildMessage(running, "stop", "Which file?").content).not.toContain(REVIEW_REMINDER);
+		expect(buildChildMessage(finished, "failure", "No key.").content).not.toContain(REVIEW_REMINDER);
+	});
+
+	test("the reminder points at the review prompt and names the report a claim", () => {
+		expect(REVIEW_REMINDER).toContain("~/.pi/agent/prompts/review.md");
+		expect(REVIEW_REMINDER).toContain("claim");
 	});
 });
 

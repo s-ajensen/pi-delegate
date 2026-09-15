@@ -37,8 +37,10 @@ Every message names the subagent and, while it runs, its key `alt+N`.
   presenting a plan. If the human already ratified the work it is doing,
   answer it yourself with `reply`. Escalate to the human only when the
   question is one you cannot or should not decide.
-- `… reports:` — the job is done as far as it is concerned. Read the report
-  against the brief you wrote. Check that every item you asked for is there.
+- `… reports:` — the job is done as far as it is concerned. The report
+  arrives with the review instruction attached; run that audit before
+  speaking, then read the report against the brief you wrote. Check that
+  every item you asked for is there.
   When something is missing or wrong, wake it by name with `reply` and say
   exactly what to fix; it reports again.
 - `… failed:` — its model call did not go through. The text is the error.

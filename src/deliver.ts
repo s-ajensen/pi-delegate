@@ -20,6 +20,10 @@ export interface ChildMessage {
 
 const VERBS: Record<ChildMessageKind, string> = { report: "reports", stop: "says", failure: "failed" };
 
+export const REVIEW_REMINDER =
+	"Before saying anything to the human about this work, audit the tree as " +
+	"`~/.pi/agent/prompts/review.md` describes. The report above is a claim.";
+
 export function describeSource(source: Pick<ChildSource, "key" | "name" | "model">): string {
 	const parts = [source.key === undefined ? undefined : hotkey(source.key), source.model].filter((p) => p !== undefined);
 	return `subagent "${source.name}" (${parts.join(", ")})`;
@@ -27,9 +31,10 @@ export function describeSource(source: Pick<ChildSource, "key" | "name" | "model
 
 export function buildChildMessage(source: ChildSource, kind: ChildMessageKind, text: string): ChildMessage {
 	const who = describeSource(source);
+	const body = kind === "report" ? `${text}\n\n${REVIEW_REMINDER}` : text;
 	return {
 		customType: CHILD_MESSAGE_TYPE,
-		content: `${who[0]?.toUpperCase()}${who.slice(1)} ${VERBS[kind]}:\n\n${text}`,
+		content: `${who[0]?.toUpperCase()}${who.slice(1)} ${VERBS[kind]}:\n\n${body}`,
 		display: true,
 		details: { ...source, kind, text },
 	};
